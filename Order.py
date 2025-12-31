@@ -1,16 +1,21 @@
 from datetime import date
+from typing import *
 '''
 - Order class
     - id, price, quantity, side, timestamp
     - store linked list position
 '''
 
+type Side = Literal["BUY", "SELL"]
+
 class Order: 
-    def __init__(self, id:int, price:int, quantity:int, side:int, timestamp:date, queuePos:int):
+    def __init__(self, id:int, price:int, quantity:int, side:Side, timestamp:date):
         self.id = id
         self.price = price
         self.quantity = quantity
         self.side = side
         self.timestamp = timestamp
-        self.queuePos = queuePos
+        self.queuePos = -1
     
+    def __str__(self):
+        return f"id: {self.id}, price: {self.price}, qty: {self.quantity}, side:{self.side}, time:{self.timestamp.day}:{self.timestamp.hour}:{self.timestamp.minute}:{self.timestamp.second}, pos:{self.queuePos}"

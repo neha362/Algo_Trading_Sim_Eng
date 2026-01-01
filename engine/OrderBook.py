@@ -1,6 +1,6 @@
 from sortedcollections import SortedDict
-from Order import *
-from PriceLevel import *
+from engine.Order import *
+from engine.PriceLevel import *
 '''
 - Order Book class
     - Keeps track of list of Bids and Asks
@@ -20,6 +20,13 @@ class OrderBook:
         self.bids = SortedDict()
         self.asks = SortedDict()
         self.ordermap = {}
+
+    #cancels the order and removes it from its respective price level
+    def cancel_order(self, order:Order):
+        assert order.id in self.ordermap
+        price_level = self.bids[-1 * order.price] if order.side == "BUY" else self.asks[order.price]
+        price_level.remove(self.ordermap[order.id])
+        del self.ordermap[order.id]
     
     #initiates the order process (i.e. checks if the order can be matched and if not then adds it to the opposing side)
     def process_order(self, order:Order):
@@ -29,8 +36,7 @@ class OrderBook:
             price = order.price * (1 if order.side == "SELL" else -1)
             if price not in side:
                 side[price] = PriceLevel(order.price)
-            side[price].add_order(order)
-            self.ordermap[order.id] = order
+            self.ordermap[order.id] = side[price].add_order(order)
     
     #matches the order (i.e. executes an order while a compatible order on the opposing side exists)
     def match_order(self, order:Order): 
@@ -53,16 +59,15 @@ class OrderBook:
     #executes the order (i.e. executes the minimum quantity at a satisfactory price)  
     def execute_order(self, order:Order, price_level:PriceLevel):
         while len(price_level.orders) > 0 and order.quantity > 0:
-            if price_level.orders[0].quantity == 0:
-                price_level.orders.popleft()
+            if price_level.orders.peek().quantity == 0:
+                price_level.orders.pop()
                 continue
-            curr_order = price_level.orders[0]
+            curr_order = price_level.orders.peek()
             qty = min(curr_order.quantity, order.quantity)
-            print(f"\texecuted order {order.id} against order {curr_order.id} for quantity {qty} at ${curr_order.price/100:.2f}")
             curr_order.quantity -= qty
             price_level.total_volume -= qty
             if curr_order.quantity <= 0:
-                price_level.orders.popleft()
+                price_level.orders.pop()
                 del self.ordermap[curr_order.id]
             order.quantity -= qty
             

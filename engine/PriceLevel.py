@@ -1,5 +1,9 @@
-from util import Deque
-import Order
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from util.Deque import Deque, DequeNode
+from engine.Order import Order
 '''
 - Price Level class
     - order objects at the same price
@@ -14,9 +18,13 @@ class PriceLevel:
     
     #adds an order to the deque of orders by appending it to the end and changing the quantity
     def add_order(self, order:Order):
-        self.orders.append(order)
+        self.orders.push(order)
         self.total_volume += order.quantity
-        print(f"added order {order} to {list(self.orders)}")
+        return self.orders.tail
+    
+    def remove_order(self, order:DequeNode[Order]):
+        self.orders.remove(order)
+        self.total_volume -= order.value.quantity
     
     def __str__(self):
         return f"price: ${self.price/100:.2f}, num orders: {len(self.orders)}, total volume: {self.total_volume}"

@@ -57,9 +57,8 @@ class OrderBook:
                 price_level.orders.popleft()
                 continue
             curr_order = price_level.orders[0]
-            print(f"executing against {curr_order}")
             qty = min(curr_order.quantity, order.quantity)
-            print(f"\texecuted order {order.id} against order {curr_order.id} for quantity {qty} at ${curr_order.price}")
+            print(f"\texecuted order {order.id} against order {curr_order.id} for quantity {qty} at ${curr_order.price/100:.2f}")
             curr_order.quantity -= qty
             price_level.total_volume -= qty
             if curr_order.quantity <= 0:

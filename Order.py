@@ -1,5 +1,6 @@
 from datetime import date
 from typing import *
+from time import *
 '''
 - Order class
     - id, price, quantity, side, timestamp
@@ -12,7 +13,7 @@ type Side = Literal["BUY", "SELL"]
 
 class Order: 
     #initializer function for Orders that keeps track of id, price, quantity, side, timestamp, and queue position
-    def __init__(self, id:int, price:int, quantity:int, side:Side, timestamp:date):
+    def __init__(self, id:int, price:int, quantity:int, side:Side, timestamp:time):
         self.id = id
         self.price = price
         self.quantity = quantity
@@ -22,4 +23,4 @@ class Order:
     
     #print function to visualize order
     def __str__(self):
-        return f"id: {self.id}, price: {self.price}, qty: {self.quantity}, side:{self.side}, time:{self.timestamp.day}:{self.timestamp.hour}:{self.timestamp.minute}:{self.timestamp.second}, pos:{self.queuePos}"
+        return f"id: {self.id}, price: ${self.price/100:.2f}, qty: {self.quantity}, side:{self.side}, time:{ctime(self.timestamp/(10 ** 9))}:{self.timestamp % (10 ** 9):09}, pos:{self.queuePos}"

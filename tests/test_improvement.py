@@ -10,3 +10,4 @@ ob = OrderBook()
 ob.process_order(sell_order)
 ob.process_order(buy_order)
 assert len(ob.asks) == 0 and len(ob.bids) == 0
+print(len(ob.asks), len(ob.bids))

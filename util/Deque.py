@@ -43,7 +43,12 @@ class Deque[T]:
             node.prev.next = node.next
         if node.next != None:
             node.next.prev = node.prev
+        if node is self.head:
+            self.head = node.next
+        if node is self.tail:
+            self.tail = node.prev
         self.len -= 1
+        node.next = node.prev = None
 
     def __len__(self):
         return self.len

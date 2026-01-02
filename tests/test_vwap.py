@@ -7,12 +7,15 @@ ob = OrderBook()
 max_buy, min_sell = 0, 100
 
 order_list = []
-for i in range(100000):
-    qty = randrange(0, 10000, 1)
+for i in range(100):
+    qty = randrange(0, 100, 1)
     side = "BUY" if randint(0, 1) == 1 else "SELL"
-    price = randrange(0, 10000, 1)
-    order_list.append(Order(i, i, price, qty, side, time_ns()))
+    if randint(0, 5) > 0:
+        order_list.append(Order(i, i, randrange(0, 1000, 1), qty, side, time_ns()))
+    else:
+        order_list.append(Order(i, i, None, qty, side, time_ns()))
 x = time_ns()
 for order in order_list:
     ob.process_order(order)
+    print(f"current VWAP: {0 if ob.shares_traded == 0 else ob.dollars_traded/ob.shares_traded:.2f}")
 print(f"time elapsed (in nanoseconds): {time_ns() - x}")

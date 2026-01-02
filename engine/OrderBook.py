@@ -20,6 +20,8 @@ class OrderBook:
         self.bids = SortedDict()
         self.asks = SortedDict()
         self.ordermap = {}
+        self.dollars_traded = 0
+        self.shares_traded = 0
 
     #cancels the order and removes it from its respective price level
     def cancel_order(self, order:Order):
@@ -31,24 +33,31 @@ class OrderBook:
     #initiates the order process (i.e. checks if the order can be matched and if not then adds it to the opposing side)
     def process_order(self, order:Order):
         order = self.match_order(order)
-        if order.quantity > 0:
+        if order.quantity > 0 and order.price != None:
             side = self.asks if order.side == "SELL" else self.bids
             price = order.price * (1 if order.side == "SELL" else -1)
             if price not in side:
                 side[price] = PriceLevel(order.price)
             self.ordermap[order.id] = side[price].add_order(order)
+        elif order.price == None and order.quantity > 0:
+            print(f"cancelling market order with remaining quantity {order.quantity} on side {order.side}")
+            return
+            
     
     #matches the order (i.e. executes an order while a compatible order on the opposing side exists)
     def match_order(self, order:Order): 
         remove = []
         opp_side = self.bids if order.side == "SELL" else self.asks
         for price in opp_side:
-            orig_price = price * (-1 if order.side == "SELL" else 1)
             if order.quantity <= 0:
                 break
-            if order.side == "SELL" and order.price > orig_price or order.side == "BUY" and order.price < orig_price:
-                break
-            self.execute_order(order, opp_side[price])
+            if order.price == None:
+                self.execute_order(order, opp_side[price])
+            else:
+                orig_price = price * (-1 if order.side == "SELL" else 1)
+                if order.side == "SELL" and order.price > orig_price or order.side == "BUY" and order.price < orig_price:
+                    break
+                self.execute_order(order, opp_side[price])
             if opp_side[price].total_volume == 0:
                 remove.append(price)
                 continue
@@ -63,9 +72,15 @@ class OrderBook:
                 price_level.orders.pop()
                 continue
             curr_order = price_level.orders.peek()
+            if order.firm_id == curr_order.firm_id:
+                print(f"STP Triggered: Order {order.id} rejected to avoid wash trade with {curr_order.id}")
+                order.quantity = 0
+                return
             qty = min(curr_order.quantity, order.quantity)
             curr_order.quantity -= qty
             price_level.total_volume -= qty
+            self.shares_traded += qty
+            self.dollars_traded += qty * curr_order.price
             if curr_order.quantity <= 0:
                 price_level.orders.pop()
                 del self.ordermap[curr_order.id]

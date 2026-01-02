@@ -1,6 +1,7 @@
 from sortedcollections import SortedDict
-from engine.Order import *
-from engine.PriceLevel import *
+from engine.Order import Order
+from engine.PriceLevel import PriceLevel
+from engine.MarketMaker import MarketMaker
 '''
 - Order Book class
     - Keeps track of list of Bids and Asks
@@ -22,6 +23,12 @@ class OrderBook:
         self.ordermap = {}
         self.dollars_traded = 0
         self.shares_traded = 0
+        self.mm_map = {}
+
+    def register_mm(self, firm_id, market_maker:MarketMaker):
+        if firm_id in self.mm_map:
+            raise KeyError()
+        self.mm_map[firm_id] = market_maker.on_fill
 
     #cancels the order and removes it from its respective price level
     def cancel_order(self, order:Order):
@@ -85,6 +92,10 @@ class OrderBook:
                 price_level.orders.pop()
                 del self.ordermap[curr_order.id]
             order.quantity -= qty
+            if curr_order.firm_id in self.mm_map:
+                self.mm_map[curr_order.firm_id](qty, curr_order.side)
+            if order.firm_id in self.mm_map:
+                self.mm_map[order.firm_id](qty, order.side)
             
     #helper function to print the order book
     def __str__(self):

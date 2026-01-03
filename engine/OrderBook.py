@@ -25,20 +25,25 @@ class OrderBook:
         self.shares_traded = 0
         self.mm_map = {}
 
-    def register_mm(self, firm_id, market_maker:MarketMaker):
-        if firm_id in self.mm_map:
+    def register_mm(self, market_maker:MarketMaker):
+        if market_maker.firm_id in self.mm_map:
             raise KeyError()
-        self.mm_map[firm_id] = market_maker.on_fill
+        self.mm_map[market_maker.firm_id] = market_maker.on_event
 
     #cancels the order and removes it from its respective price level
     def cancel_order(self, order:Order):
-        assert order.id in self.ordermap
-        price_level = self.bids[-1 * order.price] if order.side == "BUY" else self.asks[order.price]
-        price_level.remove(self.ordermap[order.id])
-        del self.ordermap[order.id]
+        if order.id in self.ordermap:
+            price_level = self.bids[-1 * order.price] if order.side == "BUY" else self.asks[order.price]
+            price_level.remove_order(self.ordermap[order.id])
+            del self.ordermap[order.id]
+
+    def update_mms(self, initiator_id=None):
+        for firm_id in self.mm_map:
+            self.mm_map[firm_id](self, "UPDATE", initiator_id=initiator_id);
     
     #initiates the order process (i.e. checks if the order can be matched and if not then adds it to the opposing side)
-    def process_order(self, order:Order):
+    def process_order(self, order:Order, initiator_id=None):
+        best_ask, best_bid = None if not self.asks else self.asks.peekitem()[0], None if not self.bids else self.bids.peekitem()[0]
         order = self.match_order(order)
         if order.quantity > 0 and order.price != None:
             side = self.asks if order.side == "SELL" else self.bids
@@ -49,6 +54,8 @@ class OrderBook:
         elif order.price == None and order.quantity > 0:
             print(f"cancelling market order with remaining quantity {order.quantity} on side {order.side}")
             return
+        if self.asks and self.asks.peekitem()[0] != best_ask or self.bids and self.bids.peekitem()[0] != best_bid:
+            self.update_mms(initiator_id=order.firm_id)
             
     
     #matches the order (i.e. executes an order while a compatible order on the opposing side exists)
@@ -93,9 +100,9 @@ class OrderBook:
                 del self.ordermap[curr_order.id]
             order.quantity -= qty
             if curr_order.firm_id in self.mm_map:
-                self.mm_map[curr_order.firm_id](qty, curr_order.side)
+                self.mm_map[curr_order.firm_id](self, "FILL", qty, curr_order.side, initiator_id = curr_order.firm_id)
             if order.firm_id in self.mm_map:
-                self.mm_map[order.firm_id](qty, order.side)
+                self.mm_map[order.firm_id](self, "FILL", qty, order.side, initiator_id=order.firm_id)
             
     #helper function to print the order book
     def __str__(self):

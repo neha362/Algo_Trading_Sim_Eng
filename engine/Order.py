@@ -1,6 +1,6 @@
 from datetime import date
-from typing import *
-from time import *
+from typing import Literal
+from time import time, ctime
 '''
 - Order class
     - id, price, quantity, side, timestamp

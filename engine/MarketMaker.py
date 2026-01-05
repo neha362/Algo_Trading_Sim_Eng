@@ -14,7 +14,9 @@ class MarketMaker:
         self.spread_ticks = spread_ticks
         self.bid = None
         self.ask = None
-        self.profit = 0
+        self.cash = 0
+        self.last_price = None
+        self.pnl = None
     
     #generates a spread and returns a bid and ask based on the best possible bid and ask
     def generate_spread(self, orderBook, qty=10):
@@ -30,13 +32,14 @@ class MarketMaker:
         return self.bid, self.ask
 
     #if an order is filled, alter the inventory and the profit accordingly. else, refresh the quotes
-    def on_event(self, orderBook, event_type:EventType, qty=None, side=None, initiator_id=None):
-        print(initiator_id, self.firm_id, event_type, qty, side)
+    def on_event(self, orderBook, event_type:EventType, qty=None, side=None, initiator_id=None, price=None):
+        print(initiator_id, self.firm_id, event_type, qty, side, price)
         
         if event_type == "FILL":
             assert qty != None and side != None
             self.inventory += qty * (1 if side == "BUY" else -1)
-            self.profit += qty * (-self.bid.price if side == "BUY" else self.ask.price)
+            self.cash += qty * (1 if side == "BUY" else -1) * price
+            self.pnl = self.inventory * price + self.cash
         if initiator_id == self.firm_id:
             return
         
@@ -47,4 +50,5 @@ class MarketMaker:
         orderBook.process_order(bid, initiator_id=initiator_id)
         orderBook.process_order(ask, initiator_id=initiator_id)
 
+    
     

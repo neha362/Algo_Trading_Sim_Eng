@@ -21,4 +21,4 @@ for order in order_list:
     print(order.id)
     ob.process_order(order)
 for mm in mm_list:
-    print(f"market id: {mm.firm_id}, profit: {mm.profit}, inventory: {mm.inventory}")
+    print(f"market id: {mm.firm_id}, cash: {mm.cash}, p&l: {mm.pnl}, inventory: {mm.inventory}")

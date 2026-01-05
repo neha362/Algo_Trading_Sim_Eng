@@ -100,9 +100,9 @@ class OrderBook:
                 del self.ordermap[curr_order.id]
             order.quantity -= qty
             if curr_order.firm_id in self.mm_map:
-                self.mm_map[curr_order.firm_id](self, "FILL", qty, curr_order.side, initiator_id = curr_order.firm_id)
+                self.mm_map[curr_order.firm_id](self, "FILL", qty, curr_order.side, initiator_id = curr_order.firm_id, price=curr_order.price)
             if order.firm_id in self.mm_map:
-                self.mm_map[order.firm_id](self, "FILL", qty, order.side, initiator_id=order.firm_id)
+                self.mm_map[order.firm_id](self, "FILL", qty, order.side, initiator_id=order.firm_id, price=curr_order.price)
             
     #helper function to print the order book
     def __str__(self):

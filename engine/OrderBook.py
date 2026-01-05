@@ -24,6 +24,8 @@ class OrderBook:
         self.dollars_traded = 0
         self.shares_traded = 0
         self.mm_map = {}
+        self.events = []
+        self.processing = False
 
     def register_mm(self, market_maker:MarketMaker):
         if market_maker.firm_id in self.mm_map:
@@ -39,10 +41,12 @@ class OrderBook:
 
     def update_mms(self, initiator_id=None):
         for firm_id in self.mm_map:
-            self.mm_map[firm_id](self, "UPDATE", initiator_id=initiator_id);
+            self.events.append((self.mm_map[firm_id], "UPDATE", None, None, initiator_id, None))
     
     #initiates the order process (i.e. checks if the order can be matched and if not then adds it to the opposing side)
     def process_order(self, order:Order, initiator_id=None):
+        prev_process = self.processing
+        self.processing = True
         best_ask, best_bid = None if not self.asks else self.asks.peekitem()[0], None if not self.bids else self.bids.peekitem()[0]
         order = self.match_order(order)
         if order.quantity > 0 and order.price != None:
@@ -56,13 +60,18 @@ class OrderBook:
             return
         if self.asks and self.asks.peekitem()[0] != best_ask or self.bids and self.bids.peekitem()[0] != best_bid:
             self.update_mms(initiator_id=order.firm_id)
-            
+        if not prev_process:
+            while self.events:
+                call_back, event_type, qty, side, initiator_id, price = self.events.pop(0)
+                call_back(event_type=event_type, orderBook=self, qty=qty, side=side, initiator_id=initiator_id, price=price)
+            self.processing = False
+
     
     #matches the order (i.e. executes an order while a compatible order on the opposing side exists)
     def match_order(self, order:Order): 
         remove = []
         opp_side = self.bids if order.side == "SELL" else self.asks
-        for price in opp_side:
+        for price in list(opp_side.keys()):
             if order.quantity <= 0:
                 break
             if order.price == None:
@@ -100,9 +109,9 @@ class OrderBook:
                 del self.ordermap[curr_order.id]
             order.quantity -= qty
             if curr_order.firm_id in self.mm_map:
-                self.mm_map[curr_order.firm_id](self, "FILL", qty, curr_order.side, initiator_id = curr_order.firm_id, price=curr_order.price)
+                self.events.append((self.mm_map[curr_order.firm_id], "FILL", qty, curr_order.side, curr_order.firm_id, curr_order.price))
             if order.firm_id in self.mm_map:
-                self.mm_map[order.firm_id](self, "FILL", qty, order.side, initiator_id=order.firm_id, price=curr_order.price)
+                self.events.append((self.mm_map[order.firm_id], "FILL", qty, order.side, order.firm_id, curr_order.price))
             
     #helper function to print the order book
     def __str__(self):

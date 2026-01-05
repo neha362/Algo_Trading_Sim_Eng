@@ -18,7 +18,6 @@ for i in range(6, 20):
 for mm in mm_list: 
     mm.on_event(ob, "UPDATE")
 for order in order_list:
-    print(order.id)
     ob.process_order(order)
 for mm in mm_list:
     print(f"market id: {mm.firm_id}, cash: {mm.cash}, p&l: {mm.pnl}, inventory: {mm.inventory}")
